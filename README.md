@@ -259,34 +259,39 @@ retrieval is working.
 `file_search_invocation_rate` is the metric that exposes the silent failure.
 An answer can read perfectly while never retrieving anything.
 
-### Results on our test corpus (one PDF, 6 questions)
+### How to read the output
 
-| Metric | Broken | Fixed |
-|---|---|---|
-| retrieval `hit_rate` | **1.000** | **1.000** |
-| retrieval `mrr` | 0.917 | 0.917 |
-| retrieval p50 latency | 31 ms | 31 ms |
-| `file_search_invocation_rate` | **0.000** | **0.667** |
-| `groundedness_rate` | 0.000 | **0.667** |
+**Run it twice** — once before applying the chat-template fix and once after.
+The comparison is what makes the numbers meaningful.
 
-Two readings matter here.
+- **Retrieval metrics barely move between runs.** Indexing and embeddings are
+  independent of tool calling, so if `hit_rate` is already high while answers
+  are poor, the problem is the tool-calling handshake, not your RAG. Running
+  `vector_stores.search()` on its own separates those two in a single call, and
+  is the first thing to check when answers look wrong.
 
-**Retrieval was never the problem.** The index scored a perfect hit rate the
-whole time — the model simply never queried it. If your RAG returns bad answers,
-run `vector_stores.search()` first; it separates "indexing is broken" from
-"tool calling is broken" in one call.
+- **`file_search_invocation_rate` is the number to watch.** It should move from
+  zero to non-zero once the template and parser are aligned. If it stays at
+  zero, the model is still never calling the tool — recheck the three vLLM
+  flags and that your template's output format matches the parser.
 
-**0.667 is the honest ceiling for Gemma 3.** Two of six questions still answer
-from priors without retrieving. That residual is the cost of bolting tool use
-onto a model never trained for it — the template teaches the call *format*, not
-the *judgement* of when to call.
+- **Expect it to land below 1.0 with Gemma 3.** Some questions will still be
+  answered from the model's priors without retrieving. That residual is the
+  cost of bolting tool use onto a model never trained for it: the template
+  teaches the call *format*, not the *judgement* of when to call. Measure it on
+  your own corpus and decide whether the rate is acceptable for your use case.
+
+- **`groundedness_rate` tracks invocation closely.** Where it lags, the model
+  retrieved but did not use the context — usually a prompt/instruction issue
+  rather than a plumbing one.
 
 ---
 
 ## Recommendation
 
-The fix works, but **a 33% rate of answering without retrieving is not
-production-grade for a knowledge base.** Options, in order of effort:
+The fix works, but if your measured `file_search_invocation_rate` is not close
+to 1.0, a knowledge base that sometimes answers without retrieving may not be
+acceptable. Options, in order of effort:
 
 1. **Force retrieval.** Use a named `tool_choice` instead of `"auto"`.
    Grammar-constrained decoding guarantees the call, pushing invocation to 1.0
@@ -314,4 +319,3 @@ production-grade for a knowledge base.** Options, in order of effort:
 | `postgres-pgvector.yaml` | Postgres 15 + pgvector |
 | `index-pdf.py` | Create a vector store and index a PDF |
 | `rag-eval.py` | Retrieval + groundedness evaluation |
-| `rag-eval-results.json` | Eval output from our run |
