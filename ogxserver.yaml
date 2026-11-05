@@ -1,0 +1,34 @@
+apiVersion: ogx.io/v1beta1
+kind: OGXServer
+metadata:
+  name: ogx
+spec:
+  distribution:
+    name: rh
+  network:
+    externalAccess:
+      enabled: true
+    port: 8321
+  overrideConfig:
+    key: config.yaml
+    name: ogx-override-config
+  workload:
+    replicas: 1
+    overrides:
+      env:
+      - {name: PGVECTOR_HOST, value: ogx-postgres.<namespace>.svc.cluster.local}
+      - {name: PGVECTOR_PORT, value: '5432'}
+      - {name: PGVECTOR_DB,   value: ogx}
+      - {name: PGVECTOR_USER, value: ogx}
+      - {name: PGVECTOR_PASSWORD, valueFrom: {secretKeyRef: {name: ogx-postgres, key: database-password}}}
+      - {name: POSTGRES_HOST, value: ogx-postgres.<namespace>.svc.cluster.local}
+      - {name: POSTGRES_PORT, value: '5432'}
+      - {name: POSTGRES_DB,   value: ogx}
+      - {name: POSTGRES_USER, value: ogx}
+      - {name: POSTGRES_PASSWORD, valueFrom: {secretKeyRef: {name: ogx-postgres, key: database-password}}}
+    resources:
+      limits:   {cpu: '4', memory: 8Gi}
+      requests: {cpu: 500m, memory: 2Gi}
+    storage:
+      mountPath: /.ogx
+      size: 10Gi

@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hf-cache
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: 100Gi}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gemma3-27b
+  labels: {app: gemma3-27b}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: gemma3-27b}}
+  template:
+    metadata:
+      labels:
+        app: gemma3-27b
+        kueue.x-k8s.io/queue-name: reserved
+    spec:
+      containers:
+      - name: vllm
+        image: registry.redhat.io/rhaii/vllm-cuda-rhel9@sha256:fd9540f3882b9aae5f862eba6c295d0e9c6b43f8c17b27b179481bfa330bfbc1
+        command: ["python","-m","vllm.entrypoints.openai.api_server"]
+        args:
+          - --model=RedHatAI/gemma-3-27b-it-quantized.w8a8
+          - --served-model-name=gemma-quantized-w8a8
+          - --port=8000
+          - --max-model-len=32768
+          - --gpu-memory-utilization=0.85
+          - --max-num-batched-tokens=8192
+          - --dtype=bfloat16
+        ports: [{containerPort: 8000, name: http}]
+        env:
+          - {name: HF_HOME, value: /hf}
+          - {name: HF_HUB_ENABLE_HF_TRANSFER, value: "0"}
+          - {name: VLLM_NO_USAGE_STATS, value: "1"}
+        resources:
+          limits:   {cpu: "12", memory: 96Gi, nvidia.com/gpu: "1"}
+          requests: {cpu: "4",  memory: 32Gi, nvidia.com/gpu: "1"}
+        volumeMounts:
+          - {name: hf, mountPath: /hf}
+          - {name: shm, mountPath: /dev/shm}
+        readinessProbe:
+          httpGet: {path: /health, port: 8000}
+          initialDelaySeconds: 180
+          periodSeconds: 20
+          failureThreshold: 90
+      volumes:
+        - name: hf
+          persistentVolumeClaim: {claimName: hf-cache}
+        - name: shm
+          emptyDir: {medium: Memory, sizeLimit: 8Gi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gemma3-27b
+spec:
+  selector: {app: gemma3-27b}
+  ports: [{port: 8000, targetPort: 8000, name: http}]

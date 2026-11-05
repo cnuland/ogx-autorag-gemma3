@@ -1,0 +1,144 @@
+version: 2
+image_name: rh
+apis:
+  - responses
+  - inference
+  - tool_runtime
+  - vector_io
+  - files
+  - file_processors
+
+providers:
+  inference:
+    - provider_id: vllm-inference
+      provider_type: remote::vllm
+      config:
+        base_url: http://gemma3-27b.<namespace>.svc.cluster.local:8000/v1
+        api_token: fake
+        max_tokens: 4096
+        tls_verify: false
+        refresh_models: false
+    - provider_id: sentence-transformers
+      provider_type: inline::sentence-transformers
+      config: {}
+
+  vector_io:
+    - provider_id: pgvector
+      provider_type: remote::pgvector
+      config:
+        host: ${env.PGVECTOR_HOST}
+        port: ${env.PGVECTOR_PORT}
+        db: ${env.PGVECTOR_DB}
+        user: ${env.PGVECTOR_USER}
+        password: ${env.PGVECTOR_PASSWORD}
+        distance_metric: COSINE
+        persistence:
+          backend: kv_default
+          namespace: vector_io::pgvector
+
+  responses:
+    - provider_id: meta-reference
+      provider_type: inline::builtin
+      config:
+        persistence:
+          agent_state:
+            backend: kv_default
+            namespace: agents::meta_reference
+          responses:
+            backend: sql_default
+            table_name: agents_responses
+            max_write_queue_size: 10000
+            num_writers: 4
+
+  tool_runtime:
+    - provider_id: file-search
+      provider_type: inline::file-search
+      config: {}
+
+  files:
+    - provider_id: meta-reference-files
+      provider_type: inline::localfs
+      config:
+        storage_dir: /opt/app-root/src/.ogx/distributions/rh/files
+        metadata_store:
+          backend: sql_default
+          table_name: files_metadata
+
+  file_processors:
+    - provider_id: auto
+      provider_type: inline::auto
+      config: {}
+
+storage:
+  backends:
+    kv_default:
+      type: kv_postgres
+      host: ${env.POSTGRES_HOST}
+      port: ${env.POSTGRES_PORT}
+      db: ${env.POSTGRES_DB}
+      user: ${env.POSTGRES_USER}
+      password: ${env.POSTGRES_PASSWORD}
+      table_name: ogx_kvstore
+    sql_default:
+      type: sql_postgres
+      host: ${env.POSTGRES_HOST}
+      port: ${env.POSTGRES_PORT}
+      db: ${env.POSTGRES_DB}
+      user: ${env.POSTGRES_USER}
+      password: ${env.POSTGRES_PASSWORD}
+  stores:
+    metadata:
+      backend: kv_default
+      namespace: registry
+    inference:
+      backend: sql_default
+      table_name: inference_store
+      max_write_queue_size: 10000
+      num_writers: 4
+    conversations:
+      backend: sql_default
+      table_name: openai_conversations
+    prompts:
+      backend: kv_default
+      namespace: prompts
+    connectors:
+      backend: sql_default
+      table_name: connectors
+    vector_stores:
+      backend: sql_default
+      table_name: vector_store_metadata
+
+registered_resources:
+  models:
+    - model_id: gemma-quantized-w8a8
+      provider_id: vllm-inference
+      provider_model_id: gemma-quantized-w8a8
+      model_type: llm
+      metadata:
+        context_length: 32768
+    - model_id: all-MiniLM-L6-v2
+      provider_id: sentence-transformers
+      provider_model_id: all-MiniLM-L6-v2
+      model_type: embedding
+      metadata:
+        embedding_dimension: 384
+        context_length: 512
+  tool_groups:
+    - toolgroup_id: builtin::rag
+      provider_id: file-search
+
+vector_stores:
+  default_provider_id: pgvector
+  default_embedding_model:
+    provider_id: sentence-transformers
+    model_id: all-MiniLM-L6-v2
+    embedding_dimensions: 384
+  annotation_prompt_params:
+    enable_annotations: true
+    annotation_instruction_template: "Cite sources immediately at the end of sentences using <|file-id|> format."
+
+telemetry:
+  enabled: true
+
+server:
+  port: 8321

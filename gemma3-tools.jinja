@@ -1,0 +1,42 @@
+{{ bos_token }}
+{%- if tools -%}
+{%- set tool_block -%}
+You have access to the following functions. To call one, output ONLY a Python-style list literal on a single line and nothing else. No markdown, no code fences, no backticks, no explanation.
+
+Correct:   [file_search(query="example text")]
+Incorrect: ```tool_code
+[file_search(query="example text")]
+```
+
+Available functions:
+{% for t in tools %}- {{ (t.function if t.function is defined else t).name }}({{ ((t.function if t.function is defined else t).parameters.properties | default({})).keys() | join(', ') }}): {{ (t.function if t.function is defined else t).description | default('') }}
+{% endfor %}
+If the user's question requires information from these functions, you MUST call one before answering. Never invent facts that a function could provide.
+{%- endset -%}
+{%- else -%}
+{%- set tool_block = "" -%}
+{%- endif -%}
+{%- if messages[0]['role'] == 'system' -%}
+    {%- set sys = messages[0]['content'] if messages[0]['content'] is string else messages[0]['content'][0]['text'] -%}
+    {%- set loop_messages = messages[1:] -%}
+{%- else -%}
+    {%- set sys = "" -%}
+    {%- set loop_messages = messages -%}
+{%- endif -%}
+{%- set first_prefix = (sys + "\n\n" if sys else "") + (tool_block + "\n\n" if tool_block else "") -%}
+{%- for message in loop_messages -%}
+    {%- set role = 'model' if message['role'] == 'assistant' else ('user' if message['role'] in ['user','tool'] else message['role']) -%}
+<start_of_turn>{{ role }}
+{% if loop.first %}{{ first_prefix }}{% endif %}
+{%- if message['role'] == 'tool' -%}
+Function result: {{ message['content'] }}
+{%- elif message['content'] is string -%}
+{{ message['content'] }}
+{%- elif message['content'] is iterable -%}
+{%- for item in message['content'] -%}{% if item['type'] == 'text' %}{{ item['text'] }}{% endif %}{%- endfor -%}
+{%- endif -%}
+<end_of_turn>
+{% endfor -%}
+{%- if add_generation_prompt -%}
+<start_of_turn>model
+{% endif -%}
