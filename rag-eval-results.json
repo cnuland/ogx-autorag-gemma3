@@ -7,46 +7,46 @@
   },
   "answers": [
     {
-      "q": "What is the information trust barrier about?",
+      "q": "<question 1>",
       "grounded": true,
       "used_file_search": true,
       "latency_s": 3.2,
-      "answer": "The information trust barrier is about closing a data exfiltration path created by cost-optimized routing <|d2ca23c6-8796-4c1a-a4ca-670a0223b414|> . It\u2019s compri"
+      "answer": "<redacted: source document is internal>"
     },
     {
-      "q": "Who is the author of this presentation?",
+      "q": "<question 2>",
       "grounded": true,
       "used_file_search": true,
       "latency_s": 1.05,
-      "answer": "Christopher Nuland of Red Hat is the author of this presentation <|d2ca23c6-8796-4c1a-a4ca-670a0223b414|> ."
+      "answer": "<redacted: source document is internal>"
     },
     {
-      "q": "What is Praxis Core built with?",
+      "q": "<question 3>",
       "grounded": false,
       "used_file_search": false,
       "latency_s": 0.1,
-      "answer": "not in the documents"
+      "answer": "<redacted: source document is internal>"
     },
     {
-      "q": "Why is cost-optimized routing a data exfiltration path?",
+      "q": "<question 4>",
       "grounded": true,
       "used_file_search": true,
       "latency_s": 3.12,
-      "answer": "Cost-optimized routing is, by default, a data exfiltration path <|d2ca23c6-8796-4c1a-a4ca-670a0223b414|> because it prioritizes cost over data governance, poten"
+      "answer": "<redacted: source document is internal>"
     },
     {
-      "q": "What technologies are mentioned alongside llm-d?",
+      "q": "<question 5>",
       "grounded": true,
       "used_file_search": true,
       "latency_s": 3.62,
-      "answer": "Alongside llm-d, the technologies mentioned are llm-d-sc, Praxis, NVIDIA NeMo Guardrails, Pingora, Tokio, rustls, vLLM, Presidio, GLiNER, Llama Guard, OpenClaw "
+      "answer": "<redacted: source document is internal>"
     },
     {
-      "q": "What classification is this deck marked with?",
+      "q": "<question 6>",
       "grounded": false,
       "used_file_search": false,
       "latency_s": 0.1,
-      "answer": "not in the documents"
+      "answer": "<redacted: source document is internal>"
     }
   ],
   "summary": {

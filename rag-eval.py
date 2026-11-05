@@ -9,14 +9,13 @@ client=OpenAI(base_url=BASE, api_key="none", timeout=300.0)
 vsid=open("/tmp/vsid.txt").read().strip()
 MODEL="vllm-inference/gemma-quantized-w8a8"
 
-# Synthetic eval set grounded in "Managing the Information Trust Barrier"
-EVAL=[
- {"q":"What is the information trust barrier about?","must":["trust","routing"]},
- {"q":"Who is the author of this presentation?","must":["nuland"]},
- {"q":"What is Praxis Core built with?","must":["rust","pingora","tokio","rustls"]},
- {"q":"Why is cost-optimized routing a data exfiltration path?","must":["routing","data"]},
- {"q":"What technologies are mentioned alongside llm-d?","must":["nemo","guardrails","praxis","nvidia"]},
- {"q":"What classification is this deck marked with?","must":["internal","nda","shared"]},
+# Replace with questions over YOUR corpus. "must" lists terms that a correct,
+# grounded answer has to contain -- keep them lowercase and distinctive enough
+# that the model cannot produce them from priors alone.
+EVAL = [
+ {"q": "<your question 1>", "must": ["term-a", "term-b"]},
+ {"q": "<your question 2>", "must": ["term-c"]},
+ {"q": "<your question 3>", "must": ["term-d", "term-e"]},
 ]
 
 def retrieval_metrics():

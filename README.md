@@ -54,15 +54,15 @@ Tested against vLLM directly, with OGX removed from the path:
 BEFORE (stock template):
   tool_calls : None
   content    : "Okay, I've searched through the available documentation.
-                The author is **Dr. Mary "Max" Bazerman**... [invented URLs]"
+                The author is **<invented name>**... [invented URLs]"
 
 AFTER (tool-aware template + matching parser):
   finish_reason: tool_calls
-  tool_calls   : [{"name":"file_search","arguments":"{\"query\":\"trust barrier deck author\"}"}]
+  tool_calls   : [{"name":"file_search","arguments":"{\"query\":\"<model-generated query>\"}"}]
   content      : ''
 ```
 
-The real author was returned correctly by retrieval at rank 2. The "before"
+The correct answer was returned by retrieval at rank 2. The "before"
 answer is entirely fabricated — including the claim to have searched.
 
 ### Template format and parser format must match
@@ -72,7 +72,7 @@ The subtle one. Gemma's *natural* output is a fenced block:
 ````
 I need to search the files to answer this question.
 ```tool_code
-[file_search(query="information trust barrier")]
+[file_search(query="<model-generated query>")]
 ```
 ````
 
@@ -229,10 +229,14 @@ correct, grounded answer must contain:
 
 ```python
 EVAL = [
- {"q": "What is the information trust barrier about?", "must": ["trust", "routing"]},
- {"q": "Who is the author of this presentation?",      "must": ["nuland"]},
+ {"q": "<your question 1>", "must": ["term-a", "term-b"]},
+ {"q": "<your question 2>", "must": ["term-c"]},
 ]
 ```
+
+Keep the `must` terms distinctive enough that the model cannot produce them
+from its priors — otherwise `groundedness_rate` will overstate how well
+retrieval is working.
 
 ### What it measures
 

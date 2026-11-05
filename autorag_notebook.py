@@ -114,7 +114,7 @@ print("file_counts:", counts)       # completed should be > 0 before querying
 # ---------------------------------------------------------------------------
 probe = client.vector_stores.search(
     vector_store_id=vector_store_id,
-    query="information trust barrier",
+    query="<your probe query>",
     max_num_results=3,
 )
 print(f"retrieval probe -> {len(probe.data)} results")
@@ -129,7 +129,7 @@ system_instructions = (
     "Answer using ONLY the retrieved documents. "
     "If the answer is not present, say you do not know. Cite the source."
 )
-prompt = "What is the information trust barrier?"
+prompt = "<your question>"
 
 response = client.responses.create(
     model=INFERENCE_MODEL,            # FIX 3: was a llama model id while
